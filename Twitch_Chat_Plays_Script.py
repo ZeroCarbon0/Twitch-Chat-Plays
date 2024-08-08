@@ -20,7 +20,7 @@ from twitchAPI.oauth import UserAuthenticator
 from twitchAPI.type import AuthScope
 from twitchAPI.chat import Chat, EventData, ChatMessage, ChatEvent
 import asyncio
-from cred.env import APP_ID, APP_SECERT
+from cred import APP_ID, APP_SECRET
 
 TARGET_CHANNEL = 'Zerocarbon0'
 SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
