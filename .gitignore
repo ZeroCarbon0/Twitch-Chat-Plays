@@ -1,0 +1,9 @@
+# Ignore Python compiled files
+
+# Ignore environment files
+
+# Ignore credentials file
+cred.py
+
+# Ignore IDE/editor specific files
+
