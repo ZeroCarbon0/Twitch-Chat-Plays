@@ -23,6 +23,7 @@ import asyncio
 import pyautogui
 from cred import APP_ID, APP_SECRET
 import tts
+import time
 
 
 TARGET_CHANNEL = 'Zerocarbon0'
@@ -31,31 +32,51 @@ SCOPES = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 
 #State Variables
 SEQUENCE = {
+    'grey': ['g', 'r', 'e', 'y'],
+    'white': ['w', 'h', 'i', 't', 'e'],
     'blue': ['b', 'l', 'u', 'e'],
-    'green': ['g', 'r', 'e', 'e', 'n'],
     'red': ['r', 'e', 'd'],
-    'yellow': ['y', 'e', 'l', 'l', 'o', 'w']
+    'green': ['g', 'r', 'e', 'e', 'n'],
+    'black': ['b', 'l', 'a', 'c', 'k'],
+    'ore': ['o', 'r', 'e'],
+    'brown': ['b', 'r', 'o', 'w', 'n'],
+    'uno': ['u', 'n', 'o']
 }
 
 current_indices = {
+    'grey': 0,
+    'white': 0,
     'blue': 0,
+    'red': 0,
     'green': 0,
-    'red': 0, 
-    'yellow': 0
+    'black': 0,
+    'ore': 0,
+    'brown': 0,
+    'uno': 0
 }
 
 KEY_TO_PRESS = {
-    'blue': '1',
-    'green': '2',
-    'red': '3', 
-    'yellow': '4'
+    'grey': 'f13',
+    'white': 'f14',
+    'blue': 'f15',
+    'red': 'o',
+    'green': 'f17',
+    'black': 'f18',
+    'ore': 'f19',
+    'brown': 'f20',
+    'uno': 'f21'
 }
 
 Announcement = {
-    'blue': 'Twitch chat typed BLUE',
-    'green': 'Twitch chat typed GREEN',
-    'red': 'Twitch chat typed RED', 
-    'yellow': 'Twitch chat typed YELLOW'
+    'grey': 'Twitch Chat Typed Grey',
+    'white': 'Twitch Chat Typed White',
+    'blue': 'Twitch Chat Typed Blue',
+    'red': 'Twitch Chat Typed Red',
+    'green': 'Twitch Chat Typed Green',
+    'black': 'Twitch Chat Typed Black',
+    'ore': 'Twitch Chat Typed Ore',
+    'brown': 'Twitch Chat Typed Brown',
+    'uno': 'Twitch Chat Typed Uno'
 }
 
 async def on_ready(ready_event: EventData):
@@ -71,12 +92,13 @@ async def on_message(msg: ChatMessage):
         expected_letter = sequence[current_indices[color]]
         if expected_letter in chat_message:
             current_indices[color] += 1
-            print(current_indices)
             if current_indices[color] == len(sequence):
-                pyautogui.press(KEY_TO_PRESS[color])
-                current_indices[color] = 0
+                pyautogui.keyDown(KEY_TO_PRESS[color])
+                time.sleep(.01)
+                pyautogui.keyUp(KEY_TO_PRESS[color])
                 message = Announcement[color]
                 tts.speak_message(message)
+                current_indices[color] = 0
         else:
             current_indices[color] = 0
             
