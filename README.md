@@ -1,11 +1,5 @@
-Twitch Chat Plays code for ZeroCarbon0 stream
+Thanks DougDoug for the inspration
 
-I will probably end up making this available to others but this would be my first coding project EVER so wanted to track the progress and updates and stuff.
+This branch is to make the TTS use chat to drive a car in BeamNG.
 
-YEPPPPPPPPPPPPPPPPPPPP
-
-I am looking at how everything works and how I evole during my time coding.
-
-I barely know anything at the moment
-
-Inspired by DougDoug! 
+The problem will automatically stop and start every X minute
