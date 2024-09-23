@@ -21,9 +21,10 @@ SEQUENCE = {
     'right': 'right',
     'left turn signal': 'left turn signal',
     'right turn signal': 'right turn signal',
-    'hazard lights': 'hazard lights',
-    'parking breaks': 'parking breaks',
-    'reload vehicle': 'reload vehicle',
+    'light': 'light',
+    'brake': 'brake',
+    'reset': 'reset',
+    'restart': 'restart',
     'horn': 'horn',
     'reset': 'reset'
 }
@@ -31,13 +32,14 @@ SEQUENCE = {
 KEY_TO_PRESS = {
     'forward': 'w',
     'back': 's',
-    'left': 'a',
-    'right': 'd',
     'left turn signal': ',',
     'right turn signal': '.',
-    'hazard lights': '/',
-    'parking breaks': 'space',
-    'reload vehicle': 'f7',
+    'left': 'a',
+    'right': 'd',
+    'light': '/',
+    'brake': 'p',
+    'reset': 'f7',
+    'restart': 'r',
     'horn': 'h',
 }
 
@@ -48,119 +50,135 @@ Announcement = {
     'right': ['GO RIGHT', 'RIGHT RIGHT RIGHT'],
     'left turn signal': ['SIGNAL LEFT', 'BMW DRIVER INCOMING'],
     'right turn signal': ['SIGNAL RIGHT', 'BMW DRIVER INCOMING'],
-    'hazard lights': ['WE ARE A HAZARD', 'GET OUT OF THE WAYYYYY NOW'],
-    'parking breaks': ['PARKING BREAKS', 'PARKING'],
-    'reload vehicle': ['CALL THE MECHANIC', 'wRELOAD'],
-    'horn': ['HEY', 'LOOK AT ME'],
-    'reset': ['FLIP THE CAR', 'CALL THE PIT CREW', 'WHO BROKE THE CAR']
+    'light': ['WE ARE A HAZARD', 'GET OUT OF THE WAY NOW'],
+    'brake': ['brake', 'PARKING'],
+    'reset': ['CALL THE MECHANIC', 'RELOAD','FLIP THE CAR', 'CALL THE PIT CREW', 'WHO BROKE THE CAR'],
+    'restart': ['RESTARTING', "Chat can't drive"],
+    'horn': ['HEY', 'LOOK AT ME']
 }
 
-# State management for keys
-active_forward = None  # To track forward/back state
-active_left = None  # To track left/right state
-
-# Release control for key press cancellation
-forward_event = asyncio.Event()
-left_event = asyncio.Event()
-
-# Function to press a key for a specified time or until interrupted
 async def press_key_with_event(key, event, delay):
     pyautogui.keyDown(key)
     try:
         await asyncio.wait_for(event.wait(), delay)
     except asyncio.TimeoutError:
-        pass  # The delay finished, so we release the key
+        pass
     finally:
         pyautogui.keyUp(key)
-        event.clear()  # Reset the event for future uses
+        event.clear()
+
 
 async def press_key_once(key):
-        pyautogui.keyDown(key)
-        await asyncio.sleep(5)
-        pyautogui.keyDown(key)
+    pyautogui.keyDown(key)
+    await asyncio.sleep(2)
+    pyautogui.keyUp(key)
+
 
 # Join channel
-async def on_ready(ready_event: EventData):
+async def on_ready(ready_event):
     print('Bot is ready for work, joining channels')
     await ready_event.chat.join_room(TARGET_CHANNEL)
 
+
 # Read message and take action
-async def on_message(msg: ChatMessage):
-    global active_forward, active_left
+def create_message_handler(forward_event, left_event):
+    async def on_message(msg):
+        print(f'{msg.user.name}: {msg.text}')
+        chat_message = msg.text.lower()
 
-    print(f'{msg.user.name}: {msg.text}')
-    chat_message = msg.text.lower()
+        if 'forward' in chat_message:
+            forward_event.clear()  # Reset the event for a new 10-second timer
+            message = random.choice(Announcement['forward'])
+            #tts.speak_message(message)  # Assuming tts is a text-to-speech function
+            asyncio.create_task(press_key_with_event(KEY_TO_PRESS['forward'], forward_event, 10))
 
-    # Handle forward/backward commands
-    if 'forward' in chat_message:
-        if active_forward:
-            forward_event.set()  # Stop the current forward movement
-        active_forward = 'forward'
-        forward_event.clear()  # Reset the event for a new 10-second timer
-        message = random.choice(Announcement['forward'])
-        tts.speak_message(message)
-        asyncio.create_task(press_key_with_event(KEY_TO_PRESS['forward'], forward_event, 10))
+        elif 'back' in chat_message:
+            forward_event.clear()  # Reset the event for a new 10-second timer
+            message = random.choice(Announcement['back'])
+            #tts.speak_message(message)
+            asyncio.create_task(press_key_with_event(KEY_TO_PRESS['back'], forward_event, 10))
 
-    elif 'back' in chat_message:
-        if active_forward:
-            forward_event.set()  # Stop the current forward or backward movement
-        active_forward = 'back'
-        forward_event.clear()  # Reset the event for a new 10-second timer
-        message = random.choice(Announcement['back'])
-        tts.speak_message(message)
-        asyncio.create_task(press_key_with_event(KEY_TO_PRESS['back'], forward_event, 10))
+        elif 'left turn signal' in chat_message:
+            message = random.choice(Announcement['left turn signal'])
+            #tts.speak_message(message)
+            await press_key_once(KEY_TO_PRESS['left turn signal'])
 
-    # Handle left/right commands
-    elif 'left' in chat_message:
-        if active_left:
-            left_event.set()  # Stop the current left movement
-        active_left = 'left'
-        left_event.clear()  # Reset the event for a new 10-second timer
-        message = random.choice(Announcement['left'])
-        tts.speak_message(message)
-        asyncio.create_task(press_key_with_event(KEY_TO_PRESS['left'], left_event, 10))
+        elif 'right turn signal' in chat_message:
+            message = random.choice(Announcement['right turn signal'])
+            #tts.speak_message(message)
+            await press_key_once(KEY_TO_PRESS['right turn signal'])
 
-    elif 'right' in chat_message:
-        if active_left:
-            left_event.set()  # Stop the current left or right movement
-        active_left = 'right'
-        left_event.clear()  # Reset the event for a new 10-second timer
-        message = random.choice(Announcement['right'])
-        tts.speak_message(message)
-        asyncio.create_task(press_key_with_event(KEY_TO_PRESS['right'], left_event, 10))
+        elif 'left' in chat_message:
+            left_event.clear()  # Reset the event for a new 10-second timer
+            message = random.choice(Announcement['left'])
+            #tts.speak_message(message)
+            asyncio.create_task(press_key_with_event(KEY_TO_PRESS['left'], left_event, 10))
 
-    elif 'horn' in chat_message:
-        message = random.choice(Announcement['horn'])
-        tts.speak_message(message)
-        await press_key_once(KEY_TO_PRESS['horn'])
+        elif 'right' in chat_message:
+            left_event.clear()  # Reset the event for a new 10-second timer
+            message = random.choice(Announcement['right'])
+            #tts.speak_message(message)
+            asyncio.create_task(press_key_with_event(KEY_TO_PRESS['right'], left_event, 10))
 
-    elif 'reload vehicle' in chat_message:
-        message = random.choice(Announcement['reload vehicle'])
-        tts.speak_message(message)
-        await press_key_once(KEY_TO_PRESS['reload vehicle'])
+        elif 'horn' in chat_message:
+            message = random.choice(Announcement['horn'])
+            tts.speak_message(message)
+            await press_key_once(KEY_TO_PRESS['horn'])
 
-    elif 'parking breaks' in chat_message:
-        message = random.choice(Announcement['parking breaks'])
-        tts.speak_message(message)
-        await press_key_once(KEY_TO_PRESS['parking breaks'])
+        #elif 'reset' in chat_message:
+        #    message = random.choice(Announcement['reset'])
+        #    #tts.speak_message(message)
+        #,dp    await press_key_once(KEY_TO_PRESS['reset'])
 
-    elif 'hazard lights' in chat_message:
-        message = random.choice(Announcement['hazard lights'])
-        tts.speak_message(message)
-        await press_key_once(KEY_TO_PRESS['hazard lights'])
-    
-    #else:
-        #message = f"{msg.text}"
-        #tts.speak_message(message)
+        #elif 'start' in chat_message:
+        #    message = random.choice(Announcement['restart'])
+        #    #tts.speak_message(message)
+        #    await press_key_once(KEY_TO_PRESS['restart'])
 
-async def run():
+        elif 'brake' in chat_message:
+            message = random.choice(Announcement['brake'])
+            #tts.speak_message(message)
+            await press_key_once(KEY_TO_PRESS['brake'])
+
+        elif 'light' in chat_message:
+            message = random.choice(Announcement['light'])
+            #tts.speak_message(message)
+            await press_key_once(KEY_TO_PRESS['light'])
+
+    return on_message
+
+
+async def main(twitch):
+    tts.speak_message("It's Chats Turn!")
+
+    # Create new events in the correct event loop
+    forward_event = asyncio.Event()
+    left_event = asyncio.Event()
+
+    # Set up chat and register events
+    chat = await Chat(twitch)
+    chat.register_event(ChatEvent.READY, on_ready)
+    chat.register_event(ChatEvent.MESSAGE, create_message_handler(forward_event, left_event))
+    chat.start()
+
+    # Run the bot for 10 seconds
+    await asyncio.sleep(1200)
+
+    tts.speak_message("IT's OVER!")
+    chat.stop()
+
+
+async def periodic_runner():
     twitch = await Twitch(APP_ID, APP_SECRET)
     auth = UserAuthenticator(twitch, SCOPES)
     token, refresh_token = await auth.authenticate()
     await twitch.set_user_authentication(token, SCOPES, refresh_token)
-    chat = await Chat(twitch)
-    chat.register_event(ChatEvent.READY, on_ready)
-    chat.register_event(ChatEvent.MESSAGE, on_message)
-    chat.start()
 
-asyncio.run(run())
+    while True:
+        await main(twitch)
+        print("Waiting 5 minutes")
+        await asyncio.sleep(0)  # Sleep for 5 minutes
+
+
+# Start the periodic runner
+asyncio.run(periodic_runner())
